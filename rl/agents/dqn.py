@@ -5,6 +5,10 @@ import keras.backend as K
 from keras.models import Model
 from keras.layers import Lambda, Input, Layer, Dense
 
+import tensorflow as tf
+from tensorflow.python.framework.ops import disable_eager_execution
+disable_eager_execution()
+
 from rl.core import Agent
 from rl.policy import EpsGreedyQPolicy, GreedyQPolicy
 from rl.util import *
@@ -105,8 +109,8 @@ class DQNAgent(AbstractDQNAgent):
         super(DQNAgent, self).__init__(*args, **kwargs)
 
         # Validate (important) input.
-        if hasattr(model.output, '__len__') and len(model.output) > 1:
-            raise ValueError('Model "{}" has more than one output. DQN expects a model that has a single output.'.format(model))
+        #if hasattr(model.output, '__len__') and len(model.output) > 1:
+        #   raise ValueError('Model "{}" has more than one output. DQN expects a model that has a single output.'.format(model))
         if model.output._keras_shape != (None, self.nb_actions):
             raise ValueError('Model output "{}" has invalid shape. DQN expects a model that has one dimension for each action, in this case {}.'.format(model.output, self.nb_actions))
 

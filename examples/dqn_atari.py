@@ -10,6 +10,9 @@ from keras.layers import Dense, Activation, Flatten, Convolution2D, Permute
 from keras.optimizers import Adam
 import keras.backend as K
 
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+
 from rl.agents.dqn import DQNAgent
 from rl.policy import LinearAnnealedPolicy, BoltzmannQPolicy, EpsGreedyQPolicy
 from rl.memory import SequentialMemory
@@ -41,8 +44,8 @@ class AtariProcessor(Processor):
         return np.clip(reward, -1., 1.)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--mode', choices=['train', 'test'], default='train')
-parser.add_argument('--env-name', type=str, default='BreakoutDeterministic-v4')
+parser.add_argument('--mode', choices=['train', 'test'], default='test')
+parser.add_argument('--env-name', type=str, default='Pong-v4')
 parser.add_argument('--weights', type=str, default=None)
 args = parser.parse_args()
 
@@ -55,19 +58,20 @@ nb_actions = env.action_space.n
 # Next, we build our model. We use the same model that was described by Mnih et al. (2015).
 input_shape = (WINDOW_LENGTH,) + INPUT_SHAPE
 model = Sequential()
-if K.image_dim_ordering() == 'tf':
+if K.image_data_format() == 'channels_first':
     # (width, height, channels)
     model.add(Permute((2, 3, 1), input_shape=input_shape))
-elif K.image_dim_ordering() == 'th':
+elif K.image_data_format() == 'channels_last':
     # (channels, width, height)
     model.add(Permute((1, 2, 3), input_shape=input_shape))
 else:
-    raise RuntimeError('Unknown image_dim_ordering.')
-model.add(Convolution2D(32, (8, 8), strides=(4, 4)))
+    raise RuntimeError('Unknown image_data_format.')
+
+model.add(Convolution2D(32, (8, 8), strides=(4, 4), padding='same'))
 model.add(Activation('relu'))
-model.add(Convolution2D(64, (4, 4), strides=(2, 2)))
+model.add(Convolution2D(64, (4, 4), strides=(2, 2), padding='same'))
 model.add(Activation('relu'))
-model.add(Convolution2D(64, (3, 3), strides=(1, 1)))
+model.add(Convolution2D(64, (3, 3), strides=(1, 1), padding='same'))
 model.add(Activation('relu'))
 model.add(Flatten())
 model.add(Dense(512))
@@ -108,7 +112,7 @@ if args.mode == 'train':
     log_filename = 'dqn_{}_log.json'.format(args.env_name)
     callbacks = [ModelIntervalCheckpoint(checkpoint_weights_filename, interval=250000)]
     callbacks += [FileLogger(log_filename, interval=100)]
-    dqn.fit(env, callbacks=callbacks, nb_steps=1750000, log_interval=10000)
+    dqn.fit(env, callbacks=callbacks, nb_steps=175000, log_interval=10000)
 
     # After training is done, we save the final weights one more time.
     dqn.save_weights(weights_filename, overwrite=True)

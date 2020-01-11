@@ -4,6 +4,7 @@ import warnings
 import timeit
 import json
 from tempfile import mkdtemp
+import time
 
 import numpy as np
 import wandb
@@ -374,6 +375,7 @@ class Visualizer(Callback):
     def on_action_end(self, action, logs):
         """ Render environment at the end of each action """
         self.env.render(mode='human')
+        time.sleep(0.01)
 
 
 class ModelIntervalCheckpoint(Callback):
